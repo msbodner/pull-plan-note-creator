@@ -473,16 +473,16 @@ app.put('/api/settings', requireSysAdmin, async (req, res) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-function startServer() {
-  app.listen(PORT, () => {
-    console.log(`\n  Pull Plan Note Creator v1.0 – AWC Technologies LLC`);
-    console.log(`  Running at http://localhost:${PORT}`);
-    console.log(`  Database: ${db.IS_PG ? 'PostgreSQL' : 'SQLite (local)'}\n`);
-  });
-}
+// Listen immediately so Railway health checks pass, then init DB in background
+app.listen(PORT, () => {
+  console.log(`\n  Pull Plan Note Creator v1.0 – AWC Technologies LLC`);
+  console.log(`  Running at http://localhost:${PORT}`);
+  console.log(`  Database: ${db.IS_PG ? 'PostgreSQL (connecting…)' : 'SQLite (local)'}\n`);
 
-db.init().then(startServer).catch(err => {
-  console.error('Database init failed:', err.message);
-  console.error('Starting server in degraded mode — check DATABASE_URL / Postgres status');
-  startServer();
+  db.init().then(() => {
+    console.log(`  Database ready: ${db.IS_PG ? 'PostgreSQL' : 'SQLite'}`);
+  }).catch(err => {
+    console.error(`  Database init failed: ${err.message}`);
+    console.error('  App is running but DB calls will fail until Postgres is restored.');
+  });
 });

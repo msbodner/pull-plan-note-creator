@@ -12,7 +12,10 @@ if (IS_PG) {
   const { Pool } = require('pg');
   pgPool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 5000,   // fail fast if Postgres is down
+    idleTimeoutMillis: 30000,
+    max: 10
   });
 } else {
   const Database = require('better-sqlite3');
