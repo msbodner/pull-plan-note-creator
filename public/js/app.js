@@ -16,6 +16,7 @@ let autoSaveTimer    = null;
     currentUser = me;
     document.getElementById('userAvatar').textContent = me.username.charAt(0).toUpperCase();
     document.getElementById('userName').textContent   = me.full_name || me.username;
+    if (me.email) document.getElementById('userEmail').textContent = me.email;
     if (['admin','sysadmin'].includes(me.role)) {
       document.getElementById('adminBtn').style.display = 'inline-flex';
     }
@@ -216,14 +217,16 @@ function removeTask(i) {
 function renderBoard() {
   const board = document.getElementById('stickyBoard');
   const count = document.getElementById('taskQueueCount');
-  const expBtn  = document.getElementById('exportBtn');
-  const pushBtn = document.getElementById('pushBtn');
-  const clearBtn = document.getElementById('clearBtn');
+  const expBtn     = document.getElementById('exportBtn');
+  const previewBtn = document.getElementById('previewBtn');
+  const pushBtn    = document.getElementById('pushBtn');
+  const clearBtn   = document.getElementById('clearBtn');
 
-  count.textContent = tasks.length === 1 ? '1 task queued' : `${tasks.length} tasks queued`;
-  expBtn.disabled   = tasks.length === 0;
-  pushBtn.disabled  = tasks.length === 0;
-  clearBtn.disabled = tasks.length === 0;
+  count.textContent    = tasks.length === 1 ? '1 task queued' : `${tasks.length} tasks queued`;
+  expBtn.disabled      = tasks.length === 0;
+  previewBtn.disabled  = tasks.length === 0;
+  pushBtn.disabled     = tasks.length === 0;
+  clearBtn.disabled    = tasks.length === 0;
 
   if (tasks.length === 0) {
     board.innerHTML = '<p class="empty-state">No tasks yet – add one using the form above.</p>';
@@ -275,6 +278,31 @@ function clearBoard() {
   editingSessionId = null;
   renderBoard();
   updateSummary();
+}
+
+// ── Preview XLSX ──────────────────────────────────────────────────────────────
+function previewXLSX() {
+  if (!tasks.length) return;
+  const cols = [
+    'Title','Trade','Type','Work Type','Status',
+    'Start Date','Finish Date','Duration (Days)','Crew Size','Complete %',
+    'Assignee','Company','Role','Location','WBS',
+    'Description','Handoff ID','Previous Handoff IDs'
+  ];
+  const rows = tasks.map(t => [
+    t.title, t.trade, t.type || 'Task', t.work_type || 'Work', t.status || 'Open',
+    t.start_date || '', t.finish_date || '', t.duration, t.crew_size, t.complete_pct ?? 0,
+    t.assignee || '', t.company || '', t.role || '', t.location || '', t.wbs || '',
+    t.description || '', t.handoff_id || '', t.prev_handoffs || ''
+  ]);
+
+  const thead = `<thead><tr>${cols.map(c => `<th>${escHtml(c)}</th>`).join('')}</tr></thead>`;
+  const tbody = `<tbody>${rows.map(r =>
+    `<tr>${r.map(v => `<td>${escHtml(String(v ?? ''))}</td>`).join('')}</tr>`
+  ).join('')}</tbody>`;
+
+  document.getElementById('xlsxPreviewTable').innerHTML = thead + tbody;
+  openModal('xlsxPreviewModal');
 }
 
 // ── Export XLSX ───────────────────────────────────────────────────────────────

@@ -130,6 +130,30 @@
   .info-row:last-child { border-bottom: none; }
   .info-row .lbl { color: var(--muted); }
   .info-row .val { font-weight: 600; }
+
+  /* ── User pill email ── */
+  .user-pill-sub { font-size: 10px; color: var(--muted); line-height: 1; }
+
+  /* ── Actions card ── */
+  .actions-card {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .actions-card h3 { font-size: 13px; margin-bottom: 4px; }
+
+  /* ── XLSX Preview Modal ── */
+  #xlsxPreviewModal .modal { max-width: 90vw; width: 860px; }
+  .xlsx-table-wrap { overflow-x: auto; max-height: 60vh; border: 1px solid var(--border); border-radius: 8px; }
+  .xlsx-table { border-collapse: collapse; font-size: 11px; white-space: nowrap; width: 100%; }
+  .xlsx-table th {
+    background: #1e3a5f; color: white; padding: 7px 10px;
+    text-align: left; position: sticky; top: 0; z-index: 1;
+    font-weight: 600; border-right: 1px solid rgba(255,255,255,.15);
+  }
+  .xlsx-table td { padding: 6px 10px; border-bottom: 1px solid #f0eeeb; border-right: 1px solid #f0eeeb; }
+  .xlsx-table tr:nth-child(even) td { background: #f8f9fa; }
+  .xlsx-table tr:hover td { background: #fffbeb; }
 </style>
 </head>
 <body>
@@ -151,7 +175,10 @@
     <button class="btn btn-secondary btn-sm" onclick="showSaveModal()">Save Session</button>
     <div class="user-pill">
       <div class="user-avatar" id="userAvatar">?</div>
-      <span id="userName">…</span>
+      <div>
+        <div id="userName">…</div>
+        <div class="user-pill-sub" id="userEmail"></div>
+      </div>
     </div>
     <button class="btn btn-secondary btn-sm" id="adminBtn" onclick="window.location='/admin.html'" style="display:none;">Admin</button>
     <button class="btn btn-secondary btn-sm" onclick="logout()">Sign Out</button>
@@ -172,6 +199,23 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('saveModal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveSession()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- XLSX Preview Modal -->
+<div class="modal-overlay" id="xlsxPreviewModal">
+  <div class="modal" style="max-width:90vw;width:860px;">
+    <div class="modal-header">
+      <h2>XLSX Preview</h2>
+      <button class="modal-close" onclick="closeModal('xlsxPreviewModal')">&#10005;</button>
+    </div>
+    <div class="xlsx-table-wrap">
+      <table class="xlsx-table" id="xlsxPreviewTable"></table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('xlsxPreviewModal')">Close</button>
+      <button class="btn btn-primary" onclick="closeModal('xlsxPreviewModal');exportXLSX()">&#8595; Export XLSX</button>
     </div>
   </div>
 </div>
@@ -355,6 +399,23 @@
         </div>
       </div>
 
+      <!-- Board actions -->
+      <div class="actions-card">
+        <h3>Actions</h3>
+        <button class="btn btn-secondary btn-sm" onclick="previewXLSX()" id="previewBtn" disabled>
+          &#128065; Preview XLSX
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="exportXLSX()" id="exportBtn" disabled>
+          &#8595; Export XLSX
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="pushToAutodesk()" id="pushBtn" disabled>
+          &#9652; Push to Autodesk Build
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="clearBoard()" id="clearBtn" disabled>
+          &#128465; Clear Board
+        </button>
+      </div>
+
     </div><!-- /app-side -->
   </div><!-- /app-layout -->
 
@@ -362,15 +423,6 @@
   <div style="margin-top:4px;">
     <div class="board-toolbar">
       <span class="board-count" id="taskQueueCount">0 tasks queued</span>
-      <div class="board-actions">
-        <button class="btn btn-secondary btn-sm" onclick="clearBoard()" id="clearBtn" disabled>Clear Board</button>
-        <button class="btn btn-secondary btn-sm" onclick="exportXLSX()" id="exportBtn" disabled>
-          &#8595; Export XLSX
-        </button>
-        <button class="btn btn-primary btn-sm" onclick="pushToAutodesk()" id="pushBtn" disabled>
-          &#9652; Push to Autodesk Build
-        </button>
-      </div>
     </div>
 
     <div class="stickies" id="stickyBoard">
