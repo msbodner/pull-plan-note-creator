@@ -4,8 +4,9 @@
 let currentUser  = null;
 let editingUser  = null;
 let editingTrade = null;
-const _userCache  = {};   // id → user object
-const _tradeCache = {};   // id → trade object
+const _userCache    = {};   // id → user object
+const _tradeCache   = {};   // id → trade object
+const _sessionCache = {};   // id → session object (with parsed tasks)
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async function init() {
@@ -315,6 +316,9 @@ function confirmDelete(type, id, name) {
 async function loadAllSessions() {
   try {
     const sessions = await apiFetch('/api/sessions/all');
+    sessions.forEach(s => {
+      _sessionCache[s.id] = { ...s, tasks: JSON.parse(s.tasks_json || '[]') };
+    });
     document.getElementById('allSessionsBody').innerHTML = sessions.map(s => {
       const tasks = JSON.parse(s.tasks_json || '[]');
       return `
@@ -322,14 +326,105 @@ async function loadAllSessions() {
           <td>${s.id}</td>
           <td>${escHtml(s.username)}</td>
           <td>${escHtml(s.name)}</td>
-          <td><span class="badge badge-blue">${tasks.length} tasks</span></td>
+          <td><span class="badge badge-blue">${tasks.length} task${tasks.length !== 1 ? 's' : ''}</span></td>
           <td>${fmtDate(s.created_at)}</td>
           <td>${fmtDate(s.updated_at)}</td>
-          <td>
-            <button class="btn btn-danger btn-xs" onclick="adminDeleteSession(${s.id},'${escHtml(s.name)}')">Del</button>
+          <td style="white-space:nowrap;">
+            <button class="btn btn-secondary btn-xs" onclick="adminEditSession(${s.id})">Edit</button>
+            <button class="btn btn-danger btn-xs" onclick="adminDeleteSession(${s.id},'${escHtml(s.name)}')" style="margin-left:4px;">Del</button>
           </td>
         </tr>`;
     }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No sessions found.</td></tr>';
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── Edit session ──────────────────────────────────────────────────────────────
+let _editingSessionId   = null;
+let _editingSessionTasks = [];
+
+function adminEditSession(id) {
+  const s = _sessionCache[id];
+  if (!s) return;
+  _editingSessionId    = id;
+  _editingSessionTasks = s.tasks.map(t => ({ ...t })); // clone
+
+  document.getElementById('esName').value = s.name;
+  renderEditTaskList();
+  openModal('editSessionModal');
+}
+
+function renderEditTaskList() {
+  const container = document.getElementById('esTaskList');
+  if (!_editingSessionTasks.length) {
+    container.innerHTML = '<p style="font-size:13px;color:var(--muted);font-style:italic;padding:8px 0;">No tasks in this session.</p>';
+    return;
+  }
+  container.innerHTML = _editingSessionTasks.map((t, i) => `
+    <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;">
+        <span class="badge badge-blue" style="font-size:11px;flex-shrink:0;">${escHtml(t.trade || '—')}</span>
+        <button class="btn btn-danger btn-xs" onclick="removeEditTask(${i})" style="flex-shrink:0;">&#10005; Remove</button>
+      </div>
+      <div class="grid-2" style="gap:10px;">
+        <div class="field" style="grid-column:1/-1;margin-bottom:0;">
+          <label>Task Title</label>
+          <input type="text" value="${escHtml(t.title || '')}"
+            oninput="_editingSessionTasks[${i}].title = this.value"
+            style="font-size:13px;padding:7px 10px;" />
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Start Date</label>
+          <input type="date" value="${escHtml(t.start_date || '')}"
+            oninput="_editingSessionTasks[${i}].start_date = this.value"
+            style="font-size:13px;padding:7px 10px;" />
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Duration (Days)</label>
+          <input type="number" min="1" value="${t.duration || ''}"
+            oninput="_editingSessionTasks[${i}].duration = parseInt(this.value)||this.value"
+            style="font-size:13px;padding:7px 10px;" />
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Crew Size</label>
+          <input type="number" min="1" value="${t.crew_size || ''}"
+            oninput="_editingSessionTasks[${i}].crew_size = parseInt(this.value)||this.value"
+            style="font-size:13px;padding:7px 10px;" />
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Status</label>
+          <select onchange="_editingSessionTasks[${i}].status = this.value"
+            style="font-size:13px;padding:7px 10px;">
+            ${['Open','In progress','Work done','Complete','Incomplete','Backlog','Blocked'].map(st =>
+              `<option${t.status === st ? ' selected' : ''}>${st}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field" style="grid-column:1/-1;margin-bottom:0;">
+          <label>Notes / Description</label>
+          <textarea rows="2"
+            oninput="_editingSessionTasks[${i}].description = this.value"
+            style="font-size:13px;padding:7px 10px;min-height:52px;">${escHtml(t.description || '')}</textarea>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function removeEditTask(i) {
+  _editingSessionTasks.splice(i, 1);
+  renderEditTaskList();
+}
+
+async function adminSaveSession() {
+  const name = document.getElementById('esName').value.trim();
+  if (!name) return toast('Session name is required', 'error');
+  try {
+    await apiFetch(`/api/sessions/${_editingSessionId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name, tasks: _editingSessionTasks })
+    });
+    toast('Session saved', 'success');
+    closeModal('editSessionModal');
+    await loadAllSessions();
   } catch (e) { toast(e.message, 'error'); }
 }
 

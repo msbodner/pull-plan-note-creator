@@ -178,6 +178,26 @@
   </div>
 </div>
 
+<!-- ── Edit Session Modal ── -->
+<div class="modal-overlay" id="editSessionModal">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <h2>Edit Session</h2>
+      <button class="modal-close" onclick="closeModal('editSessionModal')">&#10005;</button>
+    </div>
+    <div class="field" style="margin-bottom:16px;">
+      <label>Session Name</label>
+      <input type="text" id="esName" placeholder="Session name" />
+    </div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px;">Tasks</div>
+    <div id="esTaskList" style="display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;padding-right:4px;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('editSessionModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="adminSaveSession()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Confirm Delete Modal ── -->
 <div class="modal-overlay" id="confirmModal">
   <div class="modal" style="max-width:380px;">

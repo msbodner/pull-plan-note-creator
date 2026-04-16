@@ -249,8 +249,10 @@ app.post('/api/sessions', requireAuth, async (req, res) => {
 
 app.put('/api/sessions/:id', requireAuth, async (req, res) => {
   try {
-    const row = await db.queryOne('SELECT * FROM work_sessions WHERE id = $1 AND user_id = $2', [req.params.id, req.session.userId]);
+    const row = await db.queryOne('SELECT * FROM work_sessions WHERE id = $1', [req.params.id]);
     if (!row) return res.status(404).json({ error: 'Session not found' });
+    if (row.user_id !== req.session.userId && req.session.userRole !== 'sysadmin')
+      return res.status(403).json({ error: 'Forbidden' });
     const { name, tasks } = req.body;
     const updatedAt = new Date().toISOString();
     await db.execute(
