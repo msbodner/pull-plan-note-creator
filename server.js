@@ -64,7 +64,14 @@ function requireSysAdmin(req, res, next) {
 }
 
 // ── Health check ─────────────────────────────────────────────────────────────
-app.get('/health', (req, res) => res.json({ ok: true, db: db.IS_PG ? 'postgres' : 'sqlite' }));
+app.get('/health', async (req, res) => {
+  try {
+    await db.queryOne('SELECT 1');
+    res.json({ ok: true, db: db.IS_PG ? 'postgres' : 'sqlite' });
+  } catch (e) {
+    res.status(503).json({ ok: false, db: db.IS_PG ? 'postgres' : 'sqlite', error: e.message });
+  }
+});
 
 // ── Root redirect ─────────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.redirect('/app.html'));
@@ -466,13 +473,16 @@ app.put('/api/settings', requireSysAdmin, async (req, res) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-db.init().then(() => {
+function startServer() {
   app.listen(PORT, () => {
     console.log(`\n  Pull Plan Note Creator v1.0 – AWC Technologies LLC`);
     console.log(`  Running at http://localhost:${PORT}`);
     console.log(`  Database: ${db.IS_PG ? 'PostgreSQL' : 'SQLite (local)'}\n`);
   });
-}).catch(err => {
-  console.error('Database init failed:', err);
-  process.exit(1);
+}
+
+db.init().then(startServer).catch(err => {
+  console.error('Database init failed:', err.message);
+  console.error('Starting server in degraded mode — check DATABASE_URL / Postgres status');
+  startServer();
 });
