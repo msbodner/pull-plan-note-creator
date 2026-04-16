@@ -101,6 +101,17 @@ async function migrate() {
         key   TEXT PRIMARY KEY,
         value TEXT NOT NULL DEFAULT ''
       );
+      CREATE TABLE IF NOT EXISTS session_history (
+        id           SERIAL PRIMARY KEY,
+        session_id   INTEGER,
+        user_id      INTEGER NOT NULL,
+        username     TEXT    NOT NULL DEFAULT '',
+        session_name TEXT    NOT NULL DEFAULT '',
+        action       TEXT    NOT NULL DEFAULT 'saved',
+        task_count   INTEGER NOT NULL DEFAULT 0,
+        tasks_json   TEXT    NOT NULL DEFAULT '[]',
+        saved_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
   } else {
     sqliteDb.exec(`
@@ -136,6 +147,17 @@ async function migrate() {
       CREATE TABLE IF NOT EXISTS settings (
         key   TEXT PRIMARY KEY,
         value TEXT NOT NULL DEFAULT ''
+      );
+      CREATE TABLE IF NOT EXISTS session_history (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id   INTEGER,
+        user_id      INTEGER NOT NULL,
+        username     TEXT    NOT NULL DEFAULT '',
+        session_name TEXT    NOT NULL DEFAULT '',
+        action       TEXT    NOT NULL DEFAULT 'saved',
+        task_count   INTEGER NOT NULL DEFAULT 0,
+        tasks_json   TEXT    NOT NULL DEFAULT '[]',
+        saved_at     DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
   }

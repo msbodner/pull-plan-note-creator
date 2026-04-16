@@ -235,13 +235,36 @@ app.get('/api/sessions/all', requireSysAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.get('/api/session-history', requireSysAdmin, async (req, res) => {
+  try {
+    const rows = await db.query(
+      `SELECT * FROM session_history ORDER BY saved_at DESC LIMIT 500`
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/session-history', requireSysAdmin, async (req, res) => {
+  try {
+    await db.execute('DELETE FROM session_history');
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/api/sessions', requireAuth, async (req, res) => {
   try {
     const { name, tasks } = req.body;
     if (!name) return res.status(400).json({ error: 'Session name required' });
+    const tasksJson = JSON.stringify(tasks || []);
     const id = await db.insert(
       'INSERT INTO work_sessions (user_id, name, tasks_json) VALUES ($1, $2, $3)',
-      [req.session.userId, name, JSON.stringify(tasks || [])]
+      [req.session.userId, name, tasksJson]
+    );
+    // Record history
+    await db.insert(
+      `INSERT INTO session_history (session_id, user_id, username, session_name, action, task_count, tasks_json)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [id, req.session.userId, req.session.username, name, 'created', (tasks || []).length, tasksJson]
     );
     res.status(201).json(await db.queryOne('SELECT * FROM work_sessions WHERE id = $1', [id]));
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -254,10 +277,19 @@ app.put('/api/sessions/:id', requireAuth, async (req, res) => {
     if (row.user_id !== req.session.userId && req.session.userRole !== 'sysadmin')
       return res.status(403).json({ error: 'Forbidden' });
     const { name, tasks } = req.body;
-    const updatedAt = new Date().toISOString();
+    const updatedAt  = new Date().toISOString();
+    const finalName  = name ?? row.name;
+    const tasksJson  = tasks !== undefined ? JSON.stringify(tasks) : row.tasks_json;
+    const taskArr    = tasks !== undefined ? tasks : JSON.parse(row.tasks_json || '[]');
     await db.execute(
       'UPDATE work_sessions SET name=$1, tasks_json=$2, updated_at=$3 WHERE id=$4',
-      [name ?? row.name, tasks !== undefined ? JSON.stringify(tasks) : row.tasks_json, updatedAt, req.params.id]
+      [finalName, tasksJson, updatedAt, req.params.id]
+    );
+    // Record history
+    await db.insert(
+      `INSERT INTO session_history (session_id, user_id, username, session_name, action, task_count, tasks_json)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [req.params.id, row.user_id, req.session.username, finalName, 'updated', taskArr.length, tasksJson]
     );
     res.json(await db.queryOne('SELECT * FROM work_sessions WHERE id = $1', [req.params.id]));
   } catch (e) { res.status(500).json({ error: e.message }); }

@@ -198,6 +198,23 @@
   </div>
 </div>
 
+<!-- ── History View Modal ── -->
+<div class="modal-overlay" id="historyViewModal">
+  <div class="modal" style="max-width:780px;">
+    <div class="modal-header">
+      <h2 id="historyViewTitle">Session Snapshot</h2>
+      <button class="modal-close" onclick="closeModal('historyViewModal')">&#10005;</button>
+    </div>
+    <div id="historyViewMeta" style="font-size:12px;color:var(--muted);margin-bottom:12px;"></div>
+    <div style="overflow-x:auto;max-height:420px;border:1px solid var(--border);border-radius:8px;">
+      <table id="historyViewTable" style="border-collapse:collapse;font-size:12px;white-space:nowrap;width:100%;"></table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('historyViewModal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Confirm Delete Modal ── -->
 <div class="modal-overlay" id="confirmModal">
   <div class="modal" style="max-width:380px;">
@@ -223,6 +240,7 @@
     <button class="tab-btn active" onclick="switchTab('users',this)">Users</button>
     <button class="tab-btn" onclick="switchTab('trades',this)">Trades</button>
     <button class="tab-btn sysadmin-only" onclick="switchTab('data',this)" style="display:none;">Data Access</button>
+    <button class="tab-btn sysadmin-only" onclick="switchTab('history',this)" style="display:none;">Session History</button>
     <button class="tab-btn sysadmin-only" onclick="switchTab('settings',this)" style="display:none;">Settings</button>
   </div>
 
@@ -298,6 +316,39 @@
         </thead>
         <tbody id="allSessionsBody">
           <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Session History Tab (SysAdmin) ── -->
+  <div class="tab-panel" id="tab-history">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div>
+        <h3 style="margin:0;">Session History</h3>
+        <p style="font-size:12px;color:var(--muted);margin:4px 0 0;">Immutable log of every session save — auto-saves and manual saves.</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="loadSessionHistory()">Refresh</button>
+        <button class="btn btn-danger btn-sm" onclick="clearSessionHistory()">Clear History</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Saved At</th>
+            <th>User</th>
+            <th>Session Name</th>
+            <th>Action</th>
+            <th>Tasks</th>
+            <th>Session ID</th>
+            <th>View</th>
+          </tr>
+        </thead>
+        <tbody id="sessionHistoryBody">
+          <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr>
         </tbody>
       </table>
     </div>

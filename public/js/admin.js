@@ -66,6 +66,7 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   document.getElementById(`tab-${name}`).classList.add('active');
   if (name === 'data')     loadAllSessions();
+  if (name === 'history')  loadSessionHistory();
   if (name === 'settings') loadSettings();
 }
 
@@ -434,6 +435,87 @@ async function adminDeleteSession(id, name) {
     await apiFetch(`/api/sessions/${id}`, { method:'DELETE' });
     toast('Session deleted');
     loadAllSessions();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SESSION HISTORY (SysAdmin)
+// ═══════════════════════════════════════════════════════════════════
+const _historyCache = {};  // id → history row
+
+async function loadSessionHistory() {
+  try {
+    const rows = await apiFetch('/api/session-history');
+    rows.forEach(r => { _historyCache[r.id] = r; });
+    const actionBadge = { created: 'badge-green', updated: 'badge-blue' };
+    document.getElementById('sessionHistoryBody').innerHTML = rows.map(r => `
+      <tr>
+        <td style="color:var(--muted);font-size:12px;">${r.id}</td>
+        <td style="white-space:nowrap;">${fmtDateTime(r.saved_at)}</td>
+        <td>${escHtml(r.username)}</td>
+        <td>${escHtml(r.session_name)}</td>
+        <td><span class="badge ${actionBadge[r.action] || 'badge-gray'}">${escHtml(r.action)}</span></td>
+        <td><span class="badge badge-gray">${r.task_count} task${r.task_count !== 1 ? 's' : ''}</span></td>
+        <td style="color:var(--muted);font-size:12px;">${r.session_id ?? '—'}</td>
+        <td>
+          <button class="btn btn-secondary btn-xs" onclick="viewHistoryEntry(${r.id})">View</button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No history yet — saves will appear here automatically.</td></tr>';
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function fmtDateTime(s) {
+  if (!s) return '—';
+  return new Date(s).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function viewHistoryEntry(id) {
+  const r = _historyCache[id];
+  if (!r) return;
+  const tasks = JSON.parse(r.tasks_json || '[]');
+
+  document.getElementById('historyViewTitle').textContent =
+    `Snapshot: ${r.session_name}`;
+  document.getElementById('historyViewMeta').innerHTML =
+    `<strong>${escHtml(r.username)}</strong> &middot; ${fmtDateTime(r.saved_at)}
+     &middot; <span class="badge ${r.action === 'created' ? 'badge-green' : 'badge-blue'}">${r.action}</span>
+     &middot; ${tasks.length} task${tasks.length !== 1 ? 's' : ''}`;
+
+  const cols = ['Title','Trade','Status','Start Date','Duration','Crew','Priority','Assignee','Description'];
+  const thead = `<thead style="position:sticky;top:0;"><tr>${cols.map(c =>
+    `<th style="background:#1e3a5f;color:#fff;padding:7px 10px;text-align:left;font-weight:600;border-right:1px solid rgba(255,255,255,.15);">${c}</th>`
+  ).join('')}</tr></thead>`;
+
+  const tbody = tasks.length
+    ? `<tbody>${tasks.map((t, i) => `
+        <tr style="${i % 2 === 1 ? 'background:#f8f9fa;' : ''}">
+          <td style="padding:6px 10px;border-bottom:1px solid #f0eeeb;">${escHtml(t.title || '—')}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #f0eeeb;">${escHtml(t.trade || '—')}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #f0eeeb;">${escHtml(t.status || '—')}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #f0eeeb;">${escHtml(t.start_date || '—')}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #f0eeeb;">${t.duration ?? '—'}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #f0eeeb;">${t.crew_size ?? '—'}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #f0eeeb;">${escHtml(t.priority || 'Normal')}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #f0eeeb;">${escHtml(t.assignee || '—')}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #f0eeeb;max-width:200px;overflow:hidden;text-overflow:ellipsis;">${escHtml(t.description || '—')}</td>
+        </tr>`
+      ).join('')}</tbody>`
+    : `<tbody><tr><td colspan="${cols.length}" style="padding:20px;text-align:center;color:var(--muted);">No tasks in this snapshot.</td></tr></tbody>`;
+
+  document.getElementById('historyViewTable').innerHTML = thead + tbody;
+  openModal('historyViewModal');
+}
+
+async function clearSessionHistory() {
+  if (!confirm('Clear all session history? This cannot be undone.')) return;
+  try {
+    await apiFetch('/api/session-history', { method: 'DELETE' });
+    toast('Session history cleared');
+    loadSessionHistory();
   } catch (e) { toast(e.message, 'error'); }
 }
 
