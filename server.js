@@ -28,17 +28,19 @@ app.use(session({
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Auth guard — redirect unauthenticated HTML requests to login ──────────────
-app.use((req, res, next) => {
-  if (req.session?.userId) return next();
-  // Allow API auth endpoints and static assets through without a session
-  if (req.path.startsWith('/api/auth/') || req.path === '/login.html' ||
-      req.path.startsWith('/css/') || req.path.startsWith('/js/') ||
-      req.path === '/health') return next();
-  // API calls: return 401
-  if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Unauthorized' });
-  // HTML pages: redirect to login
-  res.redirect('/login.html');
+// ── Auto-login as Admin ───────────────────────────────────────────────────────
+app.use(async (req, res, next) => {
+  try {
+    if (!req.session.userId) {
+      const user = await db.queryOne('SELECT * FROM users WHERE username = $1', ['Admin']);
+      if (user) {
+        req.session.userId   = user.id;
+        req.session.username = user.username;
+        req.session.userRole = user.role;
+      }
+    }
+  } catch (e) { /* ignore – db may not be ready yet */ }
+  next();
 });
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
