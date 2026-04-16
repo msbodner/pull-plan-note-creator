@@ -1,13 +1,14 @@
 'use strict';
 
-const express   = require('express');
-const session   = require('express-session');
-const helmet    = require('helmet');
-const bcrypt    = require('bcryptjs');
-const path      = require('path');
-const ExcelJS   = require('exceljs');
-const axios     = require('axios');
-const db        = require('./database');
+const express      = require('express');
+const session      = require('express-session');
+const helmet       = require('helmet');
+const bcrypt       = require('bcryptjs');
+const path         = require('path');
+const ExcelJS      = require('exceljs');
+const axios        = require('axios');
+const db           = require('./database');
+const pgSession    = db.IS_PG ? require('connect-pg-simple')(session) : null;
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -17,10 +18,13 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(session({
+  store: pgSession
+    ? new pgSession({ conString: process.env.DATABASE_URL, createTableIfMissing: true })
+    : undefined,
   secret: process.env.SESSION_SECRET || 'pullplan-secret-key-change-in-prod',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 8 * 60 * 60 * 1000 }
+  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 

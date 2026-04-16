@@ -4,6 +4,8 @@
 let currentUser  = null;
 let editingUser  = null;
 let editingTrade = null;
+const _userCache  = {};   // id → user object
+const _tradeCache = {};   // id → trade object
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async function init() {
@@ -87,12 +89,10 @@ async function loadUsers() {
 }
 
 function renderUsersTable(users) {
-  const roleBadge = {
-    sysadmin: 'badge-red',
-    admin:    'badge-blue',
-    user:     'badge-gray'
-  };
+  const roleBadge = { sysadmin: 'badge-red', admin: 'badge-blue', user: 'badge-gray' };
   const roleLabel = { sysadmin: 'Sys Admin', admin: 'Admin', user: 'User' };
+
+  users.forEach(u => { _userCache[u.id] = u; });
 
   document.getElementById('usersBody').innerHTML = users.map(u => `
     <tr>
@@ -103,7 +103,7 @@ function renderUsersTable(users) {
       <td>${u.active ? '<span class="badge badge-green">Yes</span>' : '<span class="badge badge-red">No</span>'}</td>
       <td>${fmtDate(u.created_at)}</td>
       <td>
-        <button class="btn btn-secondary btn-xs" onclick="openEditUser(${JSON.stringify(JSON.stringify(u))})">Edit</button>
+        <button class="btn btn-secondary btn-xs" onclick="openEditUser(${u.id})">Edit</button>
         ${u.id !== currentUser?.id
           ? `<button class="btn btn-danger btn-xs" onclick="confirmDelete('user',${u.id},'${escHtml(u.username)}')" style="margin-left:4px;">Del</button>`
           : '<span style="font-size:12px;color:var(--muted);margin-left:8px;">(you)</span>'}
@@ -129,8 +129,9 @@ function openAddUser() {
   openModal('userModal');
 }
 
-function openEditUser(jsonStr) {
-  const u = JSON.parse(jsonStr);
+function openEditUser(id) {
+  const u = _userCache[id];
+  if (!u) return;
   editingUser = u;
   document.getElementById('userModalTitle').textContent = `Edit: ${u.username}`;
   document.getElementById('uUsername').value  = u.username;
@@ -193,6 +194,8 @@ async function loadTrades() {
 }
 
 function renderTradesTable(trades) {
+  trades.forEach(t => { _tradeCache[t.id] = t; });
+
   document.getElementById('tradesBody').innerHTML = trades.map(t => `
     <tr>
       <td><strong>${escHtml(t.name)}</strong></td>
@@ -208,7 +211,7 @@ function renderTradesTable(trades) {
       <td><code style="font-size:12px;">${escHtml(t.border_color)}</code></td>
       <td>${t.sort_order}</td>
       <td>
-        <button class="btn btn-secondary btn-xs" onclick="openEditTrade(${JSON.stringify(JSON.stringify(t))})">Edit</button>
+        <button class="btn btn-secondary btn-xs" onclick="openEditTrade(${t.id})">Edit</button>
         <button class="btn btn-danger btn-xs" onclick="confirmDelete('trade',${t.id},'${escHtml(t.name)}')" style="margin-left:4px;">Del</button>
       </td>
     </tr>
@@ -228,8 +231,9 @@ function openAddTrade() {
   openModal('tradeModal');
 }
 
-function openEditTrade(jsonStr) {
-  const t = JSON.parse(jsonStr);
+function openEditTrade(id) {
+  const t = _tradeCache[id];
+  if (!t) return;
   editingTrade = t;
   document.getElementById('tradeModalTitle').textContent = `Edit: ${t.name}`;
   document.getElementById('tName').value        = t.name;
