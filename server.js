@@ -260,12 +260,13 @@ app.post('/api/sessions', requireAuth, async (req, res) => {
       'INSERT INTO work_sessions (user_id, name, tasks_json) VALUES ($1, $2, $3)',
       [req.session.userId, name, tasksJson]
     );
-    // Record history
-    await db.insert(
-      `INSERT INTO session_history (session_id, user_id, username, session_name, action, task_count, tasks_json)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [id, req.session.userId, req.session.username, name, 'created', (tasks || []).length, tasksJson]
-    );
+    try {
+      await db.insert(
+        `INSERT INTO session_history (session_id, user_id, username, session_name, action, task_count, tasks_json)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [id, req.session.userId, req.session.username, name, 'created', (tasks || []).length, tasksJson]
+      );
+    } catch (he) { console.warn('session_history insert failed:', he.message); }
     res.status(201).json(await db.queryOne('SELECT * FROM work_sessions WHERE id = $1', [id]));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -285,12 +286,13 @@ app.put('/api/sessions/:id', requireAuth, async (req, res) => {
       'UPDATE work_sessions SET name=$1, tasks_json=$2, updated_at=$3 WHERE id=$4',
       [finalName, tasksJson, updatedAt, req.params.id]
     );
-    // Record history
-    await db.insert(
-      `INSERT INTO session_history (session_id, user_id, username, session_name, action, task_count, tasks_json)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [req.params.id, row.user_id, req.session.username, finalName, 'updated', taskArr.length, tasksJson]
-    );
+    try {
+      await db.insert(
+        `INSERT INTO session_history (session_id, user_id, username, session_name, action, task_count, tasks_json)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [req.params.id, row.user_id, req.session.username, finalName, 'updated', taskArr.length, tasksJson]
+      );
+    } catch (he) { console.warn('session_history insert failed:', he.message); }
     res.json(await db.queryOne('SELECT * FROM work_sessions WHERE id = $1', [req.params.id]));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

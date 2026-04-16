@@ -68,51 +68,50 @@ async function execute(sql, params = []) {
 // ── Migration ─────────────────────────────────────────────────────────────────
 async function migrate() {
   if (IS_PG) {
-    await pgPool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id            SERIAL PRIMARY KEY,
-        username      TEXT    UNIQUE NOT NULL,
-        full_name     TEXT    NOT NULL DEFAULT '',
-        email         TEXT    NOT NULL DEFAULT '',
-        password_hash TEXT    NOT NULL,
-        role          TEXT    NOT NULL DEFAULT 'user',
-        active        INTEGER NOT NULL DEFAULT 1,
-        created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS trades (
-        id           SERIAL PRIMARY KEY,
-        name         TEXT    UNIQUE NOT NULL,
-        bg_color     TEXT    NOT NULL DEFAULT '#EEEDE8',
-        border_color TEXT    NOT NULL DEFAULT '#5F5E5A',
-        text_color   TEXT    NOT NULL DEFAULT '#2C2C2A',
-        label_color  TEXT    NOT NULL DEFAULT '#5F5E5A',
-        sort_order   INTEGER NOT NULL DEFAULT 0,
-        created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS work_sessions (
-        id          SERIAL PRIMARY KEY,
-        user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        name        TEXT    NOT NULL,
-        tasks_json  TEXT    NOT NULL DEFAULT '[]',
-        created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS settings (
-        key   TEXT PRIMARY KEY,
-        value TEXT NOT NULL DEFAULT ''
-      );
-      CREATE TABLE IF NOT EXISTS session_history (
-        id           SERIAL PRIMARY KEY,
-        session_id   INTEGER,
-        user_id      INTEGER NOT NULL,
-        username     TEXT    NOT NULL DEFAULT '',
-        session_name TEXT    NOT NULL DEFAULT '',
-        action       TEXT    NOT NULL DEFAULT 'saved',
-        task_count   INTEGER NOT NULL DEFAULT 0,
-        tasks_json   TEXT    NOT NULL DEFAULT '[]',
-        saved_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    // Run each statement separately — pg client does not support multi-statement strings
+    await pgPool.query(`CREATE TABLE IF NOT EXISTS users (
+      id            SERIAL PRIMARY KEY,
+      username      TEXT    UNIQUE NOT NULL,
+      full_name     TEXT    NOT NULL DEFAULT '',
+      email         TEXT    NOT NULL DEFAULT '',
+      password_hash TEXT    NOT NULL,
+      role          TEXT    NOT NULL DEFAULT 'user',
+      active        INTEGER NOT NULL DEFAULT 1,
+      created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+    await pgPool.query(`CREATE TABLE IF NOT EXISTS trades (
+      id           SERIAL PRIMARY KEY,
+      name         TEXT    UNIQUE NOT NULL,
+      bg_color     TEXT    NOT NULL DEFAULT '#EEEDE8',
+      border_color TEXT    NOT NULL DEFAULT '#5F5E5A',
+      text_color   TEXT    NOT NULL DEFAULT '#2C2C2A',
+      label_color  TEXT    NOT NULL DEFAULT '#5F5E5A',
+      sort_order   INTEGER NOT NULL DEFAULT 0,
+      created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+    await pgPool.query(`CREATE TABLE IF NOT EXISTS work_sessions (
+      id          SERIAL PRIMARY KEY,
+      user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name        TEXT    NOT NULL,
+      tasks_json  TEXT    NOT NULL DEFAULT '[]',
+      created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+    await pgPool.query(`CREATE TABLE IF NOT EXISTS settings (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL DEFAULT ''
+    )`);
+    await pgPool.query(`CREATE TABLE IF NOT EXISTS session_history (
+      id           SERIAL PRIMARY KEY,
+      session_id   INTEGER,
+      user_id      INTEGER NOT NULL,
+      username     TEXT    NOT NULL DEFAULT '',
+      session_name TEXT    NOT NULL DEFAULT '',
+      action       TEXT    NOT NULL DEFAULT 'saved',
+      task_count   INTEGER NOT NULL DEFAULT 0,
+      tasks_json   TEXT    NOT NULL DEFAULT '[]',
+      saved_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
   } else {
     sqliteDb.exec(`
       CREATE TABLE IF NOT EXISTS users (
@@ -196,6 +195,25 @@ async function seed() {
       );
     }
   }
+
+  // Backfill session_history from existing work_sessions that have no entry yet
+  try {
+    const unlogged = await query(
+      `SELECT ws.id, ws.user_id, ws.name, ws.tasks_json, ws.created_at, u.username
+       FROM work_sessions ws
+       JOIN users u ON ws.user_id = u.id
+       WHERE ws.id NOT IN (SELECT DISTINCT session_id FROM session_history WHERE session_id IS NOT NULL)`
+    );
+    for (const s of unlogged) {
+      const tasks = JSON.parse(s.tasks_json || '[]');
+      await insert(
+        `INSERT INTO session_history (session_id, user_id, username, session_name, action, task_count, tasks_json, saved_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [s.id, s.user_id, s.username, s.name, 'imported', tasks.length, s.tasks_json, s.created_at]
+      );
+    }
+    if (unlogged.length) console.log(`  Backfilled ${unlogged.length} session(s) into session_history`);
+  } catch (e) { console.warn('  session_history backfill skipped:', e.message); }
 
   // Default settings
   const settingKeys = [
