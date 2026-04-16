@@ -68,6 +68,9 @@ function requireSysAdmin(req, res, next) {
   next();
 }
 
+// ── Health check ─────────────────────────────────────────────────────────────
+app.get('/health', (req, res) => res.json({ ok: true, db: db.IS_PG ? 'postgres' : 'sqlite' }));
+
 // ── Root redirect ─────────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.redirect('/app.html'));
 
