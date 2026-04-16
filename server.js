@@ -33,10 +33,23 @@ app.use(session({
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ── Auto-login as Admin ───────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  if (!req.session.userId) {
+    const db   = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE username = ?').get('Admin');
+    if (user) {
+      req.session.userId   = user.id;
+      req.session.username = user.username;
+      req.session.userRole = user.role;
+    }
+  }
+  next();
+});
+
 // ── Auth helpers ─────────────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
   if (req.session && req.session.userId) return next();
-  if (req.accepts('html')) return res.redirect('/login.html');
   res.status(401).json({ error: 'Unauthorized' });
 }
 
@@ -61,10 +74,7 @@ function requireSysAdmin(req, res, next) {
 }
 
 // ── Root redirect ─────────────────────────────────────────────────────────────
-app.get('/', (req, res) => {
-  if (req.session && req.session.userId) return res.redirect('/app.html');
-  res.redirect('/login.html');
-});
+app.get('/', (req, res) => res.redirect('/app.html'));
 
 // ── Auth API ──────────────────────────────────────────────────────────────────
 app.post('/api/auth/login', (req, res) => {
