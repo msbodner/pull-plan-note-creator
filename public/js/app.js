@@ -26,6 +26,7 @@ let autoSaveTimer    = null;
 
   await loadTrades();
   await loadSessions();
+  await restoreLastSession();
 })();
 
 // ── API helper ────────────────────────────────────────────────────────────────
@@ -325,6 +326,19 @@ async function pushToAutodesk() {
     btn.disabled = tasks.length === 0;
     btn.innerHTML = '&#9652; Push to Autodesk Build';
   }
+}
+
+// ── Restore last session on page load ────────────────────────────────────────
+async function restoreLastSession() {
+  try {
+    const sessions = await apiFetch('/api/sessions');
+    if (!sessions.length) return;
+    const latest = sessions[0]; // sorted by updated_at DESC
+    tasks = JSON.parse(latest.tasks_json || '[]');
+    editingSessionId = latest.id;
+    renderBoard();
+    updateSummary();
+  } catch { /* silent */ }
 }
 
 // ── Sessions ──────────────────────────────────────────────────────────────────

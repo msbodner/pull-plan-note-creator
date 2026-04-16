@@ -326,7 +326,7 @@ async function loadAllSessions() {
           <td>${s.id}</td>
           <td>${escHtml(s.username)}</td>
           <td>${escHtml(s.name)}</td>
-          <td><span class="badge badge-blue">${tasks.length} task${tasks.length !== 1 ? 's' : ''}</span></td>
+          <td><button onclick="adminEditSession(${s.id})" style="background:none;border:none;cursor:pointer;padding:0;""><span class="badge badge-blue" style="cursor:pointer;text-decoration:underline;">${tasks.length} task${tasks.length !== 1 ? 's' : ''}</span></button></td>
           <td>${fmtDate(s.created_at)}</td>
           <td>${fmtDate(s.updated_at)}</td>
           <td style="white-space:nowrap;">
