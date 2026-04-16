@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pull Plan Note Creator v1.0</title>
+<link rel="stylesheet" href="/css/main.css" />
+<style>
+  body { background: var(--bg); }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* ── Trade selector ── */
+  .trade-wrap { position: relative; margin-bottom: 20px; }
+  .trade-dot {
+    position: absolute; left: 13px; bottom: 12px;
+    width: 12px; height: 12px; border-radius: 50%; pointer-events: none;
+    border: 2px solid rgba(0,0,0,.15);
+  }
+  #tradeSelect {
+    padding-left: 36px; font-weight: 600; font-size: 15px;
+    transition: background .2s, border-color .2s, color .2s;
+  }
+
+  /* ── Form panel ── */
+  .form-panel {
+    border-radius: 14px;
+    padding: 20px 20px 16px;
+    border-top: 5px solid #ccc;
+    border-left: 1px solid rgba(0,0,0,.08);
+    border-right: 1px solid rgba(0,0,0,.08);
+    border-bottom: 1px solid rgba(0,0,0,.08);
+    transition: background .2s, border-top-color .2s;
+    margin-bottom: 24px;
+  }
+  .form-panel-header { text-align: center; margin-bottom: 18px; }
+  .form-panel-trade { font-size: 22px; font-weight: 700; }
+  .form-panel-sub { font-size: 12px; color: var(--muted); text-decoration: underline; margin-top: 2px; }
+
+  /* Form fields override for trade-colored inputs */
+  .form-panel .field input,
+  .form-panel .field select,
+  .form-panel .field textarea {
+    background: rgba(255,255,255,.78);
+  }
+  .form-panel .field input:focus,
+  .form-panel .field select:focus,
+  .form-panel .field textarea:focus {
+    background: white;
+  }
+
+  /* ── Board area ── */
+  .board-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+  }
+  .board-count { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .board-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .stickies {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    padding: 4px 0;
+  }
+  .empty-state {
+    font-size: 14px; color: #aaa; font-style: italic; padding: 8px 2px;
+  }
+
+  /* ── Sticky card ── */
+  .sc {
+    width: 128px; min-height: 110px;
+    border-radius: 8px; padding: 10px 10px 9px;
+    position: relative; border-top: 4px solid;
+    border-left: 0.5px solid rgba(0,0,0,.07);
+    border-right: 0.5px solid rgba(0,0,0,.07);
+    border-bottom: 0.5px solid rgba(0,0,0,.07);
+    box-shadow: 0 2px 6px rgba(0,0,0,.06);
+    cursor: default;
+  }
+  .sc-label {
+    font-size: 9px; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; opacity: .75;
+  }
+  .sc-title {
+    font-size: 12px; font-weight: 600; margin: 3px 18px 0 0;
+    line-height: 1.35; word-break: break-word;
+  }
+  .sc-meta { font-size: 10px; margin-top: 6px; opacity: .65; line-height: 1.4; }
+  .sc-rm {
+    position: absolute; top: 4px; right: 7px;
+    background: none; border: none; font-size: 15px;
+    cursor: pointer; opacity: .3; padding: 0; line-height: 1;
+    color: inherit; font-family: inherit;
+  }
+  .sc-rm:hover { opacity: .7; }
+
+  /* ── Sessions sidebar ── */
+  .sessions-panel {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; margin-bottom: 20px;
+  }
+  .sessions-panel h3 { font-size: 13px; margin-bottom: 10px; }
+  .session-list { display: flex; flex-direction: column; gap: 6px; }
+  .session-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 10px; border-radius: 7px;
+    background: var(--bg); border: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .session-item-name { font-weight: 600; color: var(--text); }
+  .session-item-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .session-item-actions { display: flex; gap: 5px; }
+  .no-sessions { font-size: 13px; color: var(--muted); font-style: italic; }
+
+  /* ── Layout ── */
+  .app-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+  .app-main {}
+  .app-side { display: flex; flex-direction: column; gap: 16px; }
+  @media (max-width: 860px) {
+    .app-layout { grid-template-columns: 1fr; }
+    .app-side { order: -1; }
+  }
+
+  /* ── Quick info card ── */
+  .info-card {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; font-size: 13px;
+  }
+  .info-card h3 { margin-bottom: 8px; }
+  .info-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0eeeb; }
+  .info-row:last-child { border-bottom: none; }
+  .info-row .lbl { color: var(--muted); }
+  .info-row .val { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="logo-icon">P</div>
+    <div>
+      <h1>Pull Plan Note Creator v1.0</h1>
+      <span>AWC Technologies LLC &copy; | Forma Import Tool</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-secondary btn-sm" onclick="showSaveModal()">Save Session</button>
+    <div class="user-pill">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <span id="userName">…</span>
+    </div>
+    <button class="btn btn-secondary btn-sm" id="adminBtn" onclick="window.location='/admin.html'" style="display:none;">Admin</button>
+    <button class="btn btn-secondary btn-sm" onclick="logout()">Sign Out</button>
+  </div>
+</div>
+
+<!-- Save Session Modal -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Save Session</h2>
+      <button class="modal-close" onclick="closeModal('saveModal')">&#10005;</button>
+    </div>
+    <div class="field">
+      <label>Session Name</label>
+      <input type="text" id="sessionNameInput" placeholder="e.g. Level 3 Pour Week 1" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('saveModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSession()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Load Sessions Modal -->
+<div class="modal-overlay" id="sessionsModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h2>Saved Sessions</h2>
+      <button class="modal-close" onclick="closeModal('sessionsModal')">&#10005;</button>
+    </div>
+    <div id="sessionsModalList">Loading…</div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="app-layout">
+
+    <!-- ── Left: Form ── -->
+    <div class="app-main">
+
+      <!-- Trade selector -->
+      <div class="field trade-wrap">
+        <label for="tradeSelect">Trade</label>
+        <span class="trade-dot" id="tradeDot"></span>
+        <select id="tradeSelect" onchange="selectTrade(this.value)"></select>
+      </div>
+
+      <!-- Form panel -->
+      <div class="form-panel" id="formPanel">
+        <div class="form-panel-header">
+          <div class="form-panel-trade" id="panelTrade">—</div>
+          <div class="form-panel-sub">Work to Be Performed</div>
+        </div>
+
+        <!-- Core fields -->
+        <div class="grid-2">
+          <div class="field" style="grid-column:1/-1;">
+            <label>Task Title <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="fTitle" placeholder="e.g. Pour slab – Level 2" />
+            <div class="field-error" id="eTitle">Task title is required.</div>
+          </div>
+          <div class="field">
+            <label>Start Date</label>
+            <input type="date" id="fStart" />
+            <div class="field-error" id="eStart">Start date is required.</div>
+          </div>
+          <div class="field">
+            <label>Duration (Days)</label>
+            <input type="number" id="fDur" min="1" step="1" placeholder="e.g. 3" />
+            <div class="field-error" id="eDur">Enter 1 or more days.</div>
+          </div>
+          <div class="field">
+            <label>Crew Size</label>
+            <input type="number" id="fCrew" min="1" step="1" placeholder="e.g. 4" />
+            <div class="field-error" id="eCrew">Crew size must be 1+.</div>
+          </div>
+          <div class="field">
+            <label>Priority</label>
+            <select id="fPriority">
+              <option value="Normal" selected>Normal</option>
+              <option value="Low">Low</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select id="fStatus">
+              <option value="Open" selected>Open</option>
+              <option value="In progress">In Progress</option>
+              <option value="Backlog">Backlog</option>
+              <option value="Blocked">Blocked</option>
+              <option value="Work done">Work Done</option>
+              <option value="Complete">Complete</option>
+              <option value="Incomplete">Incomplete</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Advanced toggle -->
+        <div style="margin: 6px 0 12px;">
+          <button type="button" class="collapse-toggle" onclick="toggleAdvanced()">
+            <span id="advIcon">&#9654;</span> More Fields
+          </button>
+        </div>
+
+        <div class="collapse-body" id="advancedFields">
+          <div class="grid-2">
+            <div class="field">
+              <label>Finish Date <span style="font-size:10px;font-weight:400;text-transform:none;">(optional – calculated if blank)</span></label>
+              <input type="date" id="fFinish" />
+            </div>
+            <div class="field">
+              <label>Type</label>
+              <select id="fType">
+                <option value="Task" selected>Task</option>
+                <option value="Milestone">Milestone</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Work Type</label>
+              <select id="fWorkType">
+                <option value="Work" selected>Work</option>
+                <option value="Delivery">Delivery</option>
+                <option value="Inspection">Inspection</option>
+                <option value="Roadblock">Roadblock</option>
+                <option value="Safety">Safety</option>
+                <option value="Downtime">Downtime</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Complete %</label>
+              <input type="number" id="fCompletePct" min="0" max="100" step="1" placeholder="0" />
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>Assignee (email)</label>
+              <input type="email" id="fAssignee" placeholder="user@company.com" />
+            </div>
+            <div class="field">
+              <label>Company</label>
+              <input type="text" id="fCompany" placeholder="Company name" />
+            </div>
+            <div class="field">
+              <label>Role</label>
+              <input type="text" id="fRole" placeholder="e.g. Foreman" />
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>Location</label>
+              <input type="text" id="fLocation" placeholder="Building > Floor > Area > Room" />
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>WBS</label>
+              <input type="text" id="fWbs" placeholder="Level1 > Level2 > Level3" />
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>Description</label>
+              <textarea id="fDesc" placeholder="Task description…"></textarea>
+            </div>
+            <div class="field">
+              <label>Handoff ID</label>
+              <input type="number" id="fHandoffId" min="1" step="1" placeholder="e.g. 1" />
+            </div>
+            <div class="field">
+              <label>Previous Handoff IDs</label>
+              <input type="text" id="fPrevHandoffs" placeholder="e.g. 1, 2, 3" />
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-full" id="addBtn" onclick="addTask()" style="margin-top:4px;">
+          + Add to Board
+        </button>
+      </div><!-- /form-panel -->
+
+    </div><!-- /app-main -->
+
+    <!-- ── Right: Side panel ── -->
+    <div class="app-side">
+
+      <!-- Sessions panel -->
+      <div class="sessions-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <h3 style="margin:0;">Saved Sessions</h3>
+          <button class="btn btn-secondary btn-xs" onclick="loadSessions()">Refresh</button>
+        </div>
+        <div class="session-list" id="sessionList">
+          <span class="no-sessions">No saved sessions.</span>
+        </div>
+      </div>
+
+      <!-- Board summary -->
+      <div class="info-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <h3 style="margin:0;">Board Summary</h3>
+          <span class="board-count" id="boardCount">0 tasks</span>
+        </div>
+        <div id="boardSummary">
+          <div class="info-row"><span class="lbl">Total Tasks</span><span class="val" id="sumTotal">0</span></div>
+          <div class="info-row"><span class="lbl">Total Days</span><span class="val" id="sumDays">0</span></div>
+          <div class="info-row"><span class="lbl">Total Crew-Days</span><span class="val" id="sumCrewDays">0</span></div>
+        </div>
+      </div>
+
+    </div><!-- /app-side -->
+  </div><!-- /app-layout -->
+
+  <!-- ── Board ── -->
+  <div style="margin-top:4px;">
+    <div class="board-toolbar">
+      <span class="board-count" id="taskQueueCount">0 tasks queued</span>
+      <div class="board-actions">
+        <button class="btn btn-secondary btn-sm" onclick="clearBoard()" id="clearBtn" disabled>Clear Board</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportXLSX()" id="exportBtn" disabled>
+          &#8595; Export XLSX
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="pushToAutodesk()" id="pushBtn" disabled>
+          &#9652; Push to Autodesk Build
+        </button>
+      </div>
+    </div>
+
+    <div class="stickies" id="stickyBoard">
+      <p class="empty-state">No tasks yet – add one using the form above.</p>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script src="/js/app.js"></script>
+</body>
+</html>

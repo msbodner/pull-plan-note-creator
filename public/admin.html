@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin – Pull Plan Note Creator v1.0</title>
+<link rel="stylesheet" href="/css/main.css" />
+<style>
+  body { background: var(--bg); }
+  .page { max-width: 1000px; margin: 0 auto; padding: 28px 20px 60px; }
+  .page-header { margin-bottom: 28px; }
+  .page-header h2 { font-size: 1.4rem; }
+
+  /* Color preview row */
+  .trade-color-preview {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .color-chip {
+    width: 28px; height: 28px; border-radius: 6px;
+    border: 1.5px solid rgba(0,0,0,.15); flex-shrink: 0;
+  }
+
+  /* Role badge colors */
+  .role-sysadmin { background:#fee2e2; color:#991b1b; }
+  .role-admin    { background:#dbeafe; color:#1e40af; }
+  .role-user     { background:#f3f4f6; color:#374151; }
+
+  /* Color input row */
+  .color-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .color-field { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+  .color-field label { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--muted); margin-bottom: 0; }
+  .color-field input[type="color"] {
+    width: 48px; height: 36px; padding: 2px; border-radius: 6px;
+    cursor: pointer; border: 1.5px solid var(--border);
+  }
+
+  /* Trade preview card */
+  .trade-preview {
+    border-radius: 10px; padding: 14px 16px;
+    border-top: 4px solid #ccc; margin-top: 14px;
+    border-left: 1px solid rgba(0,0,0,.08);
+    border-right: 1px solid rgba(0,0,0,.08);
+    border-bottom: 1px solid rgba(0,0,0,.08);
+    transition: all .2s;
+  }
+  .trade-preview-name { font-size: 18px; font-weight: 700; }
+  .trade-preview-sub  { font-size: 12px; opacity: .6; margin-top: 2px; }
+
+  /* Data Access table */
+  #allSessionsTable td .task-count { font-size: 12px; color: var(--muted); }
+
+  /* Settings */
+  .settings-section { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+  .settings-section h3 { margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block; margin-right: 5px;
+  }
+  .dot-green { background: var(--success); }
+  .dot-red   { background: var(--danger); }
+  .dot-gray  { background: #9ca3af; }
+</style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="logo-icon">P</div>
+    <div>
+      <h1>Pull Plan Note Creator v1.0</h1>
+      <span>AWC Technologies LLC &copy; | Admin Panel</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-pill">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <span id="userName">…</span>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="window.location='/app.html'">&#8592; Back to App</button>
+    <button class="btn btn-secondary btn-sm" onclick="logout()">Sign Out</button>
+  </div>
+</div>
+
+<!-- ── User Modal ── -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="userModalTitle">Add User</h2>
+      <button class="modal-close" onclick="closeModal('userModal')">&#10005;</button>
+    </div>
+    <div id="userModalError" class="alert alert-error" style="display:none;"></div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Username <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="uUsername" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="uFullName" />
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Email</label>
+        <input type="email" id="uEmail" />
+      </div>
+      <div class="field">
+        <label>Password <span id="uPwHint" style="font-size:10px;text-transform:none;font-weight:400;"></span></label>
+        <input type="password" id="uPassword" autocomplete="new-password" />
+      </div>
+      <div class="field">
+        <label>Role</label>
+        <select id="uRole">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+          <option value="sysadmin" id="sysadminOption">System Admin</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Active</label>
+        <select id="uActive">
+          <option value="1">Yes</option>
+          <option value="0">No</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('userModal')">Cancel</button>
+      <button class="btn btn-primary" id="userSaveBtn" onclick="saveUser()">Save User</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Trade Modal ── -->
+<div class="modal-overlay" id="tradeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="tradeModalTitle">Add Trade</h2>
+      <button class="modal-close" onclick="closeModal('tradeModal')">&#10005;</button>
+    </div>
+    <div id="tradeModalError" class="alert alert-error" style="display:none;"></div>
+    <div class="field">
+      <label>Trade Name <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="tName" placeholder="e.g. Roofing" oninput="updateTradePreview()" />
+    </div>
+    <div class="field">
+      <label>Colors</label>
+      <div class="color-row">
+        <div class="color-field">
+          <label>Background</label>
+          <input type="color" id="tBgColor" value="#EEEDE8" oninput="updateTradePreview()" />
+        </div>
+        <div class="color-field">
+          <label>Accent / Border</label>
+          <input type="color" id="tBorderColor" value="#5F5E5A" oninput="updateTradePreview()" />
+        </div>
+        <div class="color-field">
+          <label>Text</label>
+          <input type="color" id="tTextColor" value="#2C2C2A" oninput="updateTradePreview()" />
+        </div>
+        <div class="color-field">
+          <label>Label</label>
+          <input type="color" id="tLabelColor" value="#5F5E5A" oninput="updateTradePreview()" />
+        </div>
+      </div>
+    </div>
+    <!-- Live preview -->
+    <div class="trade-preview" id="tradePreview">
+      <div class="trade-preview-name" id="tPrevName">Trade Name</div>
+      <div class="trade-preview-sub">Work to Be Performed</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('tradeModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTrade()">Save Trade</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Confirm Delete Modal ── -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <h2>Confirm Delete</h2>
+      <button class="modal-close" onclick="closeModal('confirmModal')">&#10005;</button>
+    </div>
+    <p id="confirmText" style="font-size:14px;color:var(--muted);"></p>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <p class="eyebrow">Administration</p>
+    <h2>System Management</h2>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('users',this)">Users</button>
+    <button class="tab-btn" onclick="switchTab('trades',this)">Trades</button>
+    <button class="tab-btn sysadmin-only" onclick="switchTab('data',this)" style="display:none;">Data Access</button>
+    <button class="tab-btn sysadmin-only" onclick="switchTab('settings',this)" style="display:none;">Settings</button>
+  </div>
+
+  <!-- ── Users Tab ── -->
+  <div class="tab-panel active" id="tab-users">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3>User Accounts</h3>
+      <button class="btn btn-primary btn-sm" onclick="openAddUser()">+ Add User</button>
+    </div>
+    <div class="table-wrap">
+      <table id="usersTable">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Active</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersBody">
+          <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Trades Tab ── -->
+  <div class="tab-panel" id="tab-trades">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3>Trade Directory</h3>
+      <button class="btn btn-primary btn-sm" onclick="openAddTrade()">+ Add Trade</button>
+    </div>
+    <div class="table-wrap">
+      <table id="tradesTable">
+        <thead>
+          <tr>
+            <th>Trade Name</th>
+            <th>Color Preview</th>
+            <th>Bg Color</th>
+            <th>Accent Color</th>
+            <th>Sort</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tradesBody">
+          <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Data Access Tab (SysAdmin) ── -->
+  <div class="tab-panel" id="tab-data">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3>All Work Sessions</h3>
+      <button class="btn btn-secondary btn-sm" onclick="loadAllSessions()">Refresh</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Session Name</th>
+            <th>Tasks</th>
+            <th>Created</th>
+            <th>Updated</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="allSessionsBody">
+          <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Settings Tab (SysAdmin) ── -->
+  <div class="tab-panel" id="tab-settings">
+    <div class="settings-section">
+      <h3>Autodesk Build Integration</h3>
+      <div id="autodeskStatus" class="alert alert-info" style="margin-bottom:16px;">
+        <span class="status-dot dot-gray"></span> Configure credentials below to enable push to Autodesk Build.
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Client ID</label>
+          <input type="text" id="sClientId" placeholder="APS Client ID" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label>Client Secret</label>
+          <input type="password" id="sClientSecret" placeholder="APS Client Secret" autocomplete="new-password" />
+        </div>
+        <div class="field" style="grid-column:1/-1;">
+          <label>Hub / Account ID <span style="font-size:10px;text-transform:none;font-weight:400;">(from BIM 360 Account Admin)</span></label>
+          <input type="text" id="sHubId" placeholder="b.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        </div>
+        <div class="field" style="grid-column:1/-1;">
+          <label>Project ID</label>
+          <input type="text" id="sProjectId" placeholder="b.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        </div>
+        <div class="field" style="grid-column:1/-1;">
+          <label>Target Folder URN <span style="font-size:10px;text-transform:none;font-weight:400;">(Files folder where XLSX is uploaded)</span></label>
+          <input type="text" id="sFolderUrn" placeholder="urn:adsk.wipprod:fs.folder:co.xxxxxxxx" />
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+        <button class="btn btn-secondary" onclick="loadSettings()">Reload</button>
+      </div>
+    </div>
+
+    <div class="settings-section" style="background:#fffbeb;border-color:#fde68a;">
+      <h3 style="color:#92400e;">How to Push to Autodesk Build</h3>
+      <ol style="font-size:13px;color:#78350f;line-height:1.8;padding-left:18px;">
+        <li>Create an app at <strong>aps.autodesk.com</strong> and enable the Data Management API.</li>
+        <li>Copy the Client ID and Client Secret into the fields above.</li>
+        <li>Find your Project ID in Autodesk Build > Project Settings.</li>
+        <li>Find your target folder URN using the APS Explorer or Data Management API.</li>
+        <li>After uploading, open <strong>Autodesk Build &gt; Schedule &gt; Work Plans</strong> and import the uploaded file.</li>
+      </ol>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script src="/js/admin.js"></script>
+</body>
+</html>

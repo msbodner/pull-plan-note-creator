@@ -1,0 +1,8 @@
+node_modules/
+pullplan.db
+pullplan.db-shm
+pullplan.db-wal
+*.db
+.env
+.env.local
+.DS_Store

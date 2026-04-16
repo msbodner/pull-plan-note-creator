@@ -1,0 +1,20 @@
+{
+  "name": "pull-plan-app",
+  "version": "1.0.0",
+  "description": "Pull Plan Creator – Forma/Autodesk Build import tool",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^9.6.0",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "helmet": "^7.1.0",
+    "multer": "^1.4.5-lts.1"
+  }
+}

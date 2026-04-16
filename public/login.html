@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login – Pull Plan Note Creator v1.0</title>
+<link rel="stylesheet" href="/css/main.css" />
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+  .login-card {
+    background: white; border-radius: 16px; padding: 40px;
+    width: 100%; max-width: 400px; box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+  }
+  .login-logo {
+    width: 52px; height: 52px; background: var(--brand); border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 800; font-size: 24px; margin-bottom: 20px;
+  }
+  .login-card h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .login-card p  { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+  .login-footer  { margin-top: 24px; text-align: center; font-size: 12px; color: var(--muted); }
+  #errorMsg { display: none; }
+</style>
+</head>
+<body>
+<div class="login-card">
+  <div class="login-logo">P</div>
+  <h1>Pull Plan Note Creator v1.0</h1>
+  <p>by AWC Technologies LLC &copy; | Forma / Autodesk Build Import Tool</p>
+
+  <div id="errorMsg" class="alert alert-error">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 4a.75.75 0 00-1.5 0v4a.75.75 0 001.5 0V5zm0 6.25a.75.75 0 10-1.5 0 .75.75 0 001.5 0z"/></svg>
+    <span id="errorText">Invalid credentials.</span>
+  </div>
+
+  <form id="loginForm" onsubmit="doLogin(event)">
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" autocomplete="username" placeholder="Enter your username" required />
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" placeholder="Enter your password" required />
+    </div>
+    <button type="submit" class="btn btn-primary btn-full" id="loginBtn" style="margin-top:6px;">
+      Sign In
+    </button>
+  </form>
+
+  <div class="login-footer">Pull Plan Note Creator v1.0 &copy; 2025 AWC Technologies LLC</div>
+</div>
+
+<script>
+  async function doLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Signing in…';
+    document.getElementById('errorMsg').style.display = 'none';
+
+    try {
+      const resp = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value.trim(),
+          password: document.getElementById('password').value
+        })
+      });
+      if (resp.ok) {
+        window.location.href = '/app.html';
+      } else {
+        const d = await resp.json();
+        document.getElementById('errorText').textContent = d.error || 'Login failed.';
+        document.getElementById('errorMsg').style.display = 'flex';
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    } catch {
+      document.getElementById('errorText').textContent = 'Network error – is the server running?';
+      document.getElementById('errorMsg').style.display = 'flex';
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  }
+</script>
+</body>
+</html>
