@@ -1,12 +1,13 @@
 'use strict';
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let currentTrade = null;
-let trades       = [];
-let tasks        = [];
-let currentUser  = null;
-let advOpen      = false;
+let currentTrade     = null;
+let trades           = [];
+let tasks            = [];
+let currentUser      = null;
+let advOpen          = false;
 let editingSessionId = null;
+let autoSaveTimer    = null;
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async function init() {
@@ -161,6 +162,35 @@ function clearForm() {
   document.getElementById('fPriority').value = 'Normal';
 }
 
+// ── Auto-save ─────────────────────────────────────────────────────────────────
+function scheduleAutoSave() {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(doAutoSave, 1500);
+}
+
+async function doAutoSave() {
+  if (!tasks.length) return;
+  try {
+    const name = editingSessionId
+      ? undefined  // keep existing name
+      : `Auto-save ${new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}`;
+
+    if (editingSessionId) {
+      await apiFetch(`/api/sessions/${editingSessionId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ tasks })
+      });
+    } else {
+      const s = await apiFetch('/api/sessions', {
+        method: 'POST',
+        body: JSON.stringify({ name, tasks })
+      });
+      editingSessionId = s.id;
+    }
+    await loadSessions();
+  } catch { /* silent */ }
+}
+
 // ── Add task ──────────────────────────────────────────────────────────────────
 function addTask() {
   const task = readForm();
@@ -169,6 +199,7 @@ function addTask() {
   clearForm();
   renderBoard();
   updateSummary();
+  scheduleAutoSave();
   toast('Task added to board', 'success');
 }
 
@@ -177,6 +208,7 @@ function removeTask(i) {
   tasks.splice(i, 1);
   renderBoard();
   updateSummary();
+  scheduleAutoSave();
 }
 
 // ── Board render ──────────────────────────────────────────────────────────────

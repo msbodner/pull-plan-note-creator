@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>User Guide – Pull Plan Note Creator v1.0</title>
+<link rel="stylesheet" href="/css/main.css" />
+<style>
+  body { background: var(--bg); }
+  .page { max-width: 860px; margin: 0 auto; padding: 36px 24px 80px; }
+
+  /* TOC */
+  .toc {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px 26px; margin-bottom: 36px;
+  }
+  .toc h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 12px; }
+  .toc ol { padding-left: 18px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: var(--brand); text-decoration: none; font-size: 14px; font-weight: 500; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* Sections */
+  .guide-section {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px 32px; margin-bottom: 20px;
+    scroll-margin-top: 80px;
+  }
+  .guide-section h2 {
+    font-size: 1.2rem; font-weight: 700; color: var(--text);
+    border-bottom: 2px solid var(--bg); padding-bottom: 10px; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--brand); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .guide-section h3 { font-size: 15px; font-weight: 700; margin: 20px 0 8px; color: var(--text); }
+  .guide-section p  { font-size: 14px; color: #374151; line-height: 1.7; margin-bottom: 12px; }
+  .guide-section ul, .guide-section ol { font-size: 14px; color: #374151; line-height: 1.8; padding-left: 20px; margin-bottom: 14px; }
+  .guide-section li { margin-bottom: 4px; }
+
+  /* Step boxes */
+  .steps { counter-reset: step; display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+  .step {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: #f8fafc; border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px;
+  }
+  .step-num {
+    counter-increment: step;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--brand); color: white;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-num::before { content: counter(step); }
+  .step-body { font-size: 14px; color: #374151; line-height: 1.6; padding-top: 2px; }
+  .step-body strong { color: var(--text); }
+
+  /* Callout boxes */
+  .callout {
+    border-radius: 8px; padding: 13px 16px;
+    font-size: 13px; line-height: 1.6; margin: 14px 0;
+    display: flex; gap: 10px;
+  }
+  .callout-tip  { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+  .callout-info { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
+  .callout-warn { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
+  .callout-icon { font-size: 18px; flex-shrink: 0; line-height: 1.4; }
+
+  /* Field table */
+  .field-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 14px 0; }
+  .field-table th {
+    background: var(--bg); padding: 8px 12px; text-align: left;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+  }
+  .field-table td { padding: 9px 12px; border-bottom: 1px solid #f0eeeb; vertical-align: top; }
+  .field-table tr:last-child td { border-bottom: none; }
+  .field-table .req { color: var(--danger); font-weight: 700; }
+
+  /* Color chips */
+  .trade-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px 3px 6px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; border: 1.5px solid;
+  }
+  .trade-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* Kbd */
+  kbd {
+    background: #f3f4f6; border: 1px solid #d1d5db;
+    border-radius: 4px; padding: 1px 6px;
+    font-size: 12px; font-family: monospace; color: #374151;
+  }
+
+  /* Print */
+  @media print {
+    .topbar, .toc { display: none; }
+    .guide-section { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="logo-icon">P</div>
+    <div>
+      <h1>Pull Plan Note Creator v1.0</h1>
+      <span>AWC Technology, LLC | User Guide</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-secondary btn-sm" onclick="window.print()">&#128438; Print</button>
+    <button class="btn btn-primary btn-sm" onclick="window.close()">&#8592; Back to App</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <p class="eyebrow" style="margin-bottom:6px;">Documentation</p>
+  <h1 style="margin-bottom:6px;">Pull Plan Note Creator v1.0</h1>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:28px;">
+    Complete user guide &mdash; AWC Technology, LLC &copy; 2025
+  </p>
+
+  <!-- Table of Contents -->
+  <div class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#getting-started">Getting Started</a></li>
+      <li><a href="#trades">Selecting a Trade</a></li>
+      <li><a href="#form">Filling in the Form</a></li>
+      <li><a href="#board">The Task Board</a></li>
+      <li><a href="#sessions">Saving &amp; Loading Sessions</a></li>
+      <li><a href="#export">Exporting to XLSX</a></li>
+      <li><a href="#autodesk">Pushing to Autodesk Build</a></li>
+      <li><a href="#admin-users">Admin: User Management</a></li>
+      <li><a href="#admin-trades">Admin: Trade Management</a></li>
+      <li><a href="#admin-data">Admin: Data Access &amp; Settings</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. Overview -->
+  <div class="guide-section" id="overview">
+    <h2><span class="section-icon">&#9432;</span> Overview</h2>
+    <p>
+      <strong>Pull Plan Note Creator v1.0</strong> is a web-based construction planning tool built by AWC Technology, LLC.
+      It lets field supervisors and project managers create pull plan sticky notes, organize tasks by trade,
+      and export a formatted workplan directly into <strong>Autodesk Build / Forma</strong> via XLSX import or API push.
+    </p>
+    <h3>Key Capabilities</h3>
+    <ul>
+      <li>Create tasks organized by trade with color-coded sticky notes</li>
+      <li>Populate all 18 Forma/Autodesk Build workplan import fields</li>
+      <li>Auto-save your board as a named session (stored in the cloud database)</li>
+      <li>Export a properly formatted <code>.xlsx</code> file ready for Forma import</li>
+      <li>Push the file directly to Autodesk Build via API (when credentials are configured)</li>
+      <li>Manage users and trade color definitions from the Admin panel</li>
+    </ul>
+    <div class="callout callout-info">
+      <span class="callout-icon">&#128274;</span>
+      <span>All data is stored securely in a cloud PostgreSQL database. Sessions auto-save whenever you add or remove tasks.</span>
+    </div>
+  </div>
+
+  <!-- 2. Getting Started -->
+  <div class="guide-section" id="getting-started">
+    <h2><span class="section-icon">&#9654;</span> Getting Started</h2>
+    <p>The app opens directly to the Pull Plan Creator. No login is required for standard use — you are automatically signed in as <strong>Admin</strong>.</p>
+    <h3>Screen Layout</h3>
+    <ul>
+      <li><strong>Top Bar</strong> — User Guide, Save Session, user name, Admin button, Sign Out</li>
+      <li><strong>Left Panel</strong> — Trade selector and task entry form</li>
+      <li><strong>Right Panel</strong> — Saved sessions list and board summary stats</li>
+      <li><strong>Bottom</strong> — The task board (sticky notes), Export and Push buttons</li>
+    </ul>
+    <div class="callout callout-tip">
+      <span class="callout-icon">&#128161;</span>
+      <span>Start by selecting a <strong>Trade</strong> from the dropdown — the form will change color to match. Then fill in the task details and click <strong>Add to Board</strong>.</span>
+    </div>
+  </div>
+
+  <!-- 3. Trades -->
+  <div class="guide-section" id="trades">
+    <h2><span class="section-icon">&#127912;</span> Selecting a Trade</h2>
+    <p>
+      The <strong>Trade</strong> dropdown at the top of the form controls which trade the task belongs to.
+      Selecting a trade changes the color of the form and the sticky note card on the board.
+    </p>
+    <h3>Default Trades</h3>
+    <table class="field-table">
+      <thead><tr><th>Trade</th><th>Color</th></tr></thead>
+      <tbody>
+        <tr><td>Concrete</td><td><span class="trade-chip" style="background:#EEEDE8;border-color:#5F5E5A;color:#2C2C2A;"><span class="trade-dot" style="background:#5F5E5A;"></span>Gray</span></td></tr>
+        <tr><td>Masonry</td><td><span class="trade-chip" style="background:#FAECE7;border-color:#993C1D;color:#712B13;"><span class="trade-dot" style="background:#993C1D;"></span>Brick Red</span></td></tr>
+        <tr><td>Electrical</td><td><span class="trade-chip" style="background:#FAEEDA;border-color:#854F0B;color:#633806;"><span class="trade-dot" style="background:#854F0B;"></span>Amber</span></td></tr>
+        <tr><td>Carpentry</td><td><span class="trade-chip" style="background:#EAF3DE;border-color:#3B6D11;color:#173404;"><span class="trade-dot" style="background:#3B6D11;"></span>Green</span></td></tr>
+        <tr><td>Plumbing</td><td><span class="trade-chip" style="background:#E7EEF9;border-color:#1D4F99;color:#0D2B5E;"><span class="trade-dot" style="background:#1D4F99;"></span>Blue</span></td></tr>
+        <tr><td>HVAC</td><td><span class="trade-chip" style="background:#F0E7F9;border-color:#6B1D99;color:#3D0D5E;"><span class="trade-dot" style="background:#6B1D99;"></span>Purple</span></td></tr>
+        <tr><td>Steel</td><td><span class="trade-chip" style="background:#E7F0F9;border-color:#1D6B99;color:#0D3B5E;"><span class="trade-dot" style="background:#1D6B99;"></span>Steel Blue</span></td></tr>
+      </tbody>
+    </table>
+    <p>Admins can add, edit, or remove trades and customize their colors in <strong>Admin &rarr; Trades</strong>.</p>
+  </div>
+
+  <!-- 4. Form Fields -->
+  <div class="guide-section" id="form">
+    <h2><span class="section-icon">&#128221;</span> Filling in the Form</h2>
+    <p>
+      The task form maps directly to the <strong>18 columns</strong> in the Forma/Autodesk Build workplan import template.
+      Required fields are marked with a red asterisk. Optional fields are in the <em>More Fields</em> expandable section.
+    </p>
+    <h3>Core Fields (always visible)</h3>
+    <table class="field-table">
+      <thead><tr><th>Field</th><th>Description</th><th>Required</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Task Title</strong></td><td>Short name for the task, e.g. "Pour Slab – Level 2"</td><td class="req">Yes</td></tr>
+        <tr><td><strong>Start Date</strong></td><td>Planned start date (MM/DD/YYYY)</td><td class="req">Yes</td></tr>
+        <tr><td><strong>Duration (Days)</strong></td><td>Number of working days for the task</td><td class="req">Yes</td></tr>
+        <tr><td><strong>Crew Size</strong></td><td>Number of workers assigned</td><td class="req">Yes</td></tr>
+        <tr><td><strong>Priority</strong></td><td>Low, Normal (default), or High</td><td>No</td></tr>
+        <tr><td><strong>Status</strong></td><td>Open (default), In Progress, Backlog, Blocked, Work Done, Complete, Incomplete</td><td>No</td></tr>
+      </tbody>
+    </table>
+    <h3>More Fields (click to expand)</h3>
+    <table class="field-table">
+      <thead><tr><th>Field</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Finish Date</strong></td><td>Auto-calculated from Start + Duration if left blank</td></tr>
+        <tr><td><strong>Type</strong></td><td>Task (default) or Milestone</td></tr>
+        <tr><td><strong>Work Type</strong></td><td>Work, Delivery, Inspection, Roadblock, Safety, or Downtime</td></tr>
+        <tr><td><strong>Complete %</strong></td><td>Percentage complete, 0–100</td></tr>
+        <tr><td><strong>Assignee</strong></td><td>Project member email address</td></tr>
+        <tr><td><strong>Company</strong></td><td>Subcontractor or company name</td></tr>
+        <tr><td><strong>Role</strong></td><td>Role title (e.g. Foreman, Superintendent)</td></tr>
+        <tr><td><strong>Location</strong></td><td>Hierarchical path: Building &gt; Floor &gt; Area &gt; Room</td></tr>
+        <tr><td><strong>WBS</strong></td><td>Work breakdown structure: Level1 &gt; Level2 &gt; Level3</td></tr>
+        <tr><td><strong>Description</strong></td><td>Free-text description of the work</td></tr>
+        <tr><td><strong>Handoff ID</strong></td><td>Unique integer used to link tasks in sequence</td></tr>
+        <tr><td><strong>Previous Handoff IDs</strong></td><td>Comma-separated IDs of predecessor tasks (e.g. 1, 2, 3)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-tip">
+      <span class="callout-icon">&#128161;</span>
+      <span>Use <strong>Handoff IDs</strong> to define task dependencies. Set a unique number in each task's "Handoff ID", then list predecessors in "Previous Handoff IDs". Autodesk Build uses these to draw dependency arrows.</span>
+    </div>
+  </div>
+
+  <!-- 5. Board -->
+  <div class="guide-section" id="board">
+    <h2><span class="section-icon">&#128203;</span> The Task Board</h2>
+    <p>
+      After filling in the form, click <strong>Add to Board</strong>. A color-coded sticky note appears on the board below, showing the task title, start date, duration, and crew size.
+      The board also auto-saves to the database within 1–2 seconds.
+    </p>
+    <h3>Board Actions</h3>
+    <ul>
+      <li><strong>&#10005; (remove)</strong> — Click the X on any sticky note to remove that task</li>
+      <li><strong>Clear Board</strong> — Removes all tasks (asks for confirmation)</li>
+      <li><strong>Export XLSX</strong> — Downloads a formatted Excel file (active when board has tasks)</li>
+      <li><strong>Push to Autodesk Build</strong> — Uploads directly to your Autodesk project (requires credentials in Admin &rarr; Settings)</li>
+    </ul>
+    <h3>Board Summary (right panel)</h3>
+    <ul>
+      <li><strong>Total Tasks</strong> — Count of tasks on the board</li>
+      <li><strong>Total Days</strong> — Sum of all task durations</li>
+      <li><strong>Total Crew-Days</strong> — Sum of (Duration × Crew Size) across all tasks</li>
+    </ul>
+  </div>
+
+  <!-- 6. Sessions -->
+  <div class="guide-section" id="sessions">
+    <h2><span class="section-icon">&#128190;</span> Saving &amp; Loading Sessions</h2>
+    <p>
+      A <strong>session</strong> is a named snapshot of the tasks currently on your board. Sessions are stored in the cloud database and persist across browser closes and device changes.
+    </p>
+    <h3>Auto-Save</h3>
+    <p>
+      Whenever you add or remove a task, the board is <strong>automatically saved</strong> within 2 seconds.
+      The first auto-save creates a new session named <em>"Auto-save [date/time]"</em>.
+      Subsequent changes update the same session silently.
+    </p>
+    <h3>Manually Saving a Session</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num"></div><div class="step-body">Click <strong>Save Session</strong> in the top bar.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">Enter a descriptive name, e.g. <em>"Level 3 Pour – Week 14"</em>.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">Click <strong>Save</strong>. The session appears in the right panel list.</div></div>
+    </div>
+    <h3>Loading a Session</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num"></div><div class="step-body">Find the session in the <strong>Saved Sessions</strong> panel on the right.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">Click <strong>Load</strong>. If you have unsaved tasks on the board, you will be asked to confirm before overwriting.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">The board reloads with all tasks from that session. Further changes auto-save back to the same session.</div></div>
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-icon">&#9888;</span>
+      <span>Clicking <strong>Del</strong> next to a session permanently deletes it from the database. This cannot be undone.</span>
+    </div>
+  </div>
+
+  <!-- 7. Export -->
+  <div class="guide-section" id="export">
+    <h2><span class="section-icon">&#8595;</span> Exporting to XLSX</h2>
+    <p>
+      The <strong>Export XLSX</strong> button generates a Microsoft Excel file formatted exactly to the
+      <em>Forma / Autodesk Build Work Plan Import</em> template — all 18 columns, frozen header row, auto-filter, and alternating row shading.
+    </p>
+    <h3>How to Export and Import into Forma</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num"></div><div class="step-body">Add all tasks to the board.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">Click <strong>Export XLSX</strong>. The file <code>pull-plan-import.xlsx</code> downloads to your computer.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">Open <strong>Autodesk Build</strong> &rarr; <strong>Schedule</strong> &rarr; <strong>Work Plans</strong>.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">Click <strong>Import</strong> and select the downloaded file.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">Review the import preview and confirm.</div></div>
+    </div>
+    <div class="callout callout-info">
+      <span class="callout-icon">&#128196;</span>
+      <span>Do <strong>not</strong> rename or delete any columns in the exported file before importing — Autodesk Build requires the exact column order.</span>
+    </div>
+  </div>
+
+  <!-- 8. Autodesk Push -->
+  <div class="guide-section" id="autodesk">
+    <h2><span class="section-icon">&#9652;</span> Pushing to Autodesk Build</h2>
+    <p>
+      The <strong>Push to Autodesk Build</strong> button uploads the XLSX file directly to your Autodesk Build project using the Autodesk Platform Services (APS) API — no manual download required.
+    </p>
+    <h3>One-Time Setup (Admin only)</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num"></div><div class="step-body">Go to <a href="https://aps.autodesk.com" target="_blank">aps.autodesk.com</a>, sign in, and create a new app. Enable the <strong>Data Management API</strong>.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">Copy the <strong>Client ID</strong> and <strong>Client Secret</strong>.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">In this app, click <strong>Admin</strong> &rarr; <strong>Settings</strong> and paste your credentials, Project ID, and target Folder URN.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">Click <strong>Save Settings</strong>. The status indicator will turn green.</div></div>
+    </div>
+    <h3>Pushing a Work Plan</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num"></div><div class="step-body">Ensure tasks are on the board.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">Click <strong>Push to Autodesk Build</strong> and confirm the prompt.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">The file is uploaded to your configured Autodesk Build project folder.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">In Autodesk Build, go to <strong>Schedule &rarr; Work Plans</strong> and import from the Files folder.</div></div>
+    </div>
+  </div>
+
+  <!-- 9. Admin: Users -->
+  <div class="guide-section" id="admin-users">
+    <h2><span class="section-icon">&#128100;</span> Admin: User Management</h2>
+    <p>Click the <strong>Admin</strong> button in the top bar to open the Admin panel. The <strong>Users</strong> tab lets you manage who can access the app.</p>
+    <h3>User Roles</h3>
+    <table class="field-table">
+      <thead><tr><th>Role</th><th>Permissions</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-gray">User</span></td><td>Can create tasks, save/load their own sessions, export XLSX</td></tr>
+        <tr><td><span class="badge badge-blue">Admin</span></td><td>All user permissions + manage users and trades</td></tr>
+        <tr><td><span class="badge badge-red">Sys Admin</span></td><td>All admin permissions + view all sessions, configure Autodesk credentials</td></tr>
+      </tbody>
+    </table>
+    <h3>Adding a User</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num"></div><div class="step-body">Click <strong>+ Add User</strong> in the Users tab.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">Enter a username, full name, email, password, and role.</div></div>
+      <div class="step"><div class="step-num"></div><div class="step-body">Click <strong>Save User</strong>.</div></div>
+    </div>
+    <h3>Editing a User</h3>
+    <p>Click the <strong>Edit</strong> button on any row. Leave the password field blank to keep the existing password.</p>
+    <h3>Deactivating a User</h3>
+    <p>Edit the user and set <strong>Active</strong> to <em>No</em>. Deactivated users cannot log in but their session data is preserved.</p>
+  </div>
+
+  <!-- 10. Admin: Trades -->
+  <div class="guide-section" id="admin-trades">
+    <h2><span class="section-icon">&#127775;</span> Admin: Trade Management</h2>
+    <p>The <strong>Trades</strong> tab lets you add, edit, and reorder trades. Each trade has four configurable colors.</p>
+    <h3>Color Fields</h3>
+    <table class="field-table">
+      <thead><tr><th>Color</th><th>Where it appears</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Background</strong></td><td>Form panel background and sticky note card background</td></tr>
+        <tr><td><strong>Accent / Border</strong></td><td>Top border stripe on the form and sticky notes; "Add" button color; trade selector border</td></tr>
+        <tr><td><strong>Text</strong></td><td>Task title and metadata text on sticky notes</td></tr>
+        <tr><td><strong>Label</strong></td><td>Trade name label on sticky notes (usually same as Accent)</td></tr>
+      </tbody>
+    </table>
+    <p>A <strong>live preview</strong> of the form panel updates as you pick colors in the trade editor.</p>
+    <div class="callout callout-tip">
+      <span class="callout-icon">&#128161;</span>
+      <span>Use high-contrast accent colors on light backgrounds for best readability on the sticky notes.</span>
+    </div>
+  </div>
+
+  <!-- 11. Admin: Data Access & Settings -->
+  <div class="guide-section" id="admin-data">
+    <h2><span class="section-icon">&#128736;</span> Admin: Data Access &amp; Settings</h2>
+    <p>These tabs are visible to <strong>System Admin</strong> users only.</p>
+    <h3>Data Access Tab</h3>
+    <p>Shows all saved sessions from all users — including session name, task count, owner, and timestamps. System admins can delete any session.</p>
+    <h3>Settings Tab — Autodesk Build Integration</h3>
+    <table class="field-table">
+      <thead><tr><th>Setting</th><th>Where to find it</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Client ID</strong></td><td>APS app dashboard at aps.autodesk.com</td></tr>
+        <tr><td><strong>Client Secret</strong></td><td>APS app dashboard (shown once at creation)</td></tr>
+        <tr><td><strong>Hub / Account ID</strong></td><td>BIM 360 Account Admin page, starts with <code>b.</code></td></tr>
+        <tr><td><strong>Project ID</strong></td><td>Autodesk Build &rarr; Project Settings, starts with <code>b.</code></td></tr>
+        <tr><td><strong>Folder URN</strong></td><td>Use the APS Explorer or Data Management API to find the target folder URN</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-warn">
+      <span class="callout-icon">&#9888;</span>
+      <span>The Client Secret is masked after saving. Keep a secure copy — you will need to re-enter it if you ever need to update it.</span>
+    </div>
+
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:12px;">
+      Pull Plan Note Creator v1.0 &copy; 2025 AWC Technology, LLC &mdash; All rights reserved.
+    </div>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>
